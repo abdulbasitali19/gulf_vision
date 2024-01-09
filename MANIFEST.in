@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include gulf_vision *.css
+recursive-include gulf_vision *.csv
+recursive-include gulf_vision *.html
+recursive-include gulf_vision *.ico
+recursive-include gulf_vision *.js
+recursive-include gulf_vision *.json
+recursive-include gulf_vision *.md
+recursive-include gulf_vision *.png
+recursive-include gulf_vision *.py
+recursive-include gulf_vision *.svg
+recursive-include gulf_vision *.txt
+recursive-exclude gulf_vision *.pyc
