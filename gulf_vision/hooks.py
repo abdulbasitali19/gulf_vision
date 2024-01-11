@@ -93,9 +93,10 @@ doctype_js = {
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-#	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+override_doctype_class = {
+	# "ToDo": "custom_app.overrides.CustomToDo"
+	"Purchase Order":"gulf_vision.overrides.custom_purchase_order.Custompurchaseorder"
+}
 
 # Document Events
 # ---------------
@@ -104,12 +105,11 @@ doctype_js = {
 doc_events = {
     "Material Request":{
         "validate": "gulf_vision.overrides.material_request.Validating_approver"
-	}
-#	"*": {
-#		"on_update": "method",
-#		"on_cancel": "method",
-#		"on_trash": "method"
-#	}
+	},
+	"Cost Center":{
+		"on_update": "gulf_vision.overrides.cost_center.add_user_permissions",
+		"before_save": "gulf_vision.overrides.cost_center.remove_user_permissions"
+	}	
 }
 
 # Scheduled Tasks
