@@ -1,7 +1,7 @@
 import frappe
 from frappe.permissions import add_user_permission
 
-@frappe.whitelist()
+
 def add_user_permissions(doc, handler=None):
     add_user_permission(doc.doctype, doc.name, doc.pm_name,True)
     add_user_permission(doc.doctype, doc.name, doc.project_admin,True)

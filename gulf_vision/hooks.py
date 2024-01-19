@@ -33,6 +33,7 @@ app_license = "MIT"
 # include js in doctype views
 doctype_js = {
 	"Purchase Order" : "public/js/purchase_order.js",
+	"Material Request" : "public/js/material_request.js",
 }
 
 
@@ -95,7 +96,8 @@ doctype_js = {
 
 override_doctype_class = {
 	# "ToDo": "custom_app.overrides.CustomToDo"
-	"Purchase Order":"gulf_vision.overrides.custom_purchase_order.Custompurchaseorder"
+	# "Purchase Order":"gulf_vision.overrides.custom_purchase_order.Custompurchaseorder",
+	# "Material Request":"gulf_vision.overrides.custom_material_request.Custommaterialrequest"
 }
 
 # Document Events
@@ -104,12 +106,13 @@ override_doctype_class = {
 
 doc_events = {
     "Material Request":{
-        "validate": "gulf_vision.overrides.material_request.Validating_approver"
+		"before_save": "gulf_vision.overrides.material_request.check"
 	},
-	"Cost Center":{
-		"on_update": "gulf_vision.overrides.cost_center.add_user_permissions",
-		"before_save": "gulf_vision.overrides.cost_center.remove_user_permissions"
-	}	
+	# "Purchase Order":{
+	# 	"validate" : "gulf_vision.overrides.purchase_order.set_transition_table_with_roles" 
+	# }
+
+
 }
 
 # Scheduled Tasks

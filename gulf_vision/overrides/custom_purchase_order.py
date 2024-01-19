@@ -2,10 +2,13 @@ import frappe
 from erpnext.buying.doctype.purchase_order.purchase_order import PurchaseOrder
 
 class Custompurchaseorder(PurchaseOrder):
+    def onload(self):
+        pass
+    
     def validate(self):
-        self.set_transitions_roles()
+        self.create_transition_table_for_workflow()
    
-
+    @frappe.whitelist()
     def set_transitions_roles(self):
         email = frappe.db.get_value("User", frappe.session.user, 'email')
         cost_center_detail = frappe.get_doc("Cost Center", self.cost_center)
@@ -27,11 +30,11 @@ class Custompurchaseorder(PurchaseOrder):
             self.approved_purchase_order_by_project_manager(email)
 
         else: 
-            if len(self.transition_table) == 0 and frappe.session.user != "Administrator": 
+            if len(self.transition_table) == 0 and frappe.session.user !="Administrator" : 
                 frappe.throw("Document  Must be approved by Shopkeeper")
-            elif len(self.transition_table) == 1 and frappe.session.user != "Administrator":
+            elif len(self.transition_table) == 1 :
                 frappe.throw("Document Must be approved by project Admin")
-            elif len(self.transition_table) == 2 and frappe.session.user != "Administrator":
+            elif len(self.transition_table) == 2:
                 frappe.throw("Document Must be approved by Management")
             else:
                 frappe.throw("Document Must be Submit by Project Manager")
@@ -92,5 +95,16 @@ class Custompurchaseorder(PurchaseOrder):
             self.approval_stage = "Document Should Be Approved By Project Manager" 
 
 
-        
+    def create_transition_table_for_workflow(self):
+        if self.cost_center:
+            cost_center = frappe.get_doc("Cost Center", self.cost_center)
+            role_transition_dict = {}
+            role_transition_dict["pm_name"] = cost_center.pm_name
+            
+            for roles in role_transition_dict:
+                self.append("transition_table",{
+                    "role"
 
+                })
+        else:
+            frappe.throw("Cost Center is not selected")
