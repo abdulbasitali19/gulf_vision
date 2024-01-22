@@ -65,7 +65,7 @@ frappe.ui.form.on('Material Request', {
                     r = r.message
                     if (r == true) {
                         frm.reload_doc();
-                        frappe.set_route('app/material-request')
+                        frappe.set_route('app/material-request')    
                     }
                     else {
                         frappe.prompt({

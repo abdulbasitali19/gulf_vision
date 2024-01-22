@@ -108,9 +108,9 @@ doc_events = {
     "Material Request":{
 		"before_save": "gulf_vision.overrides.material_request.check"
 	},
-	# "Purchase Order":{
-	# 	"validate" : "gulf_vision.overrides.purchase_order.set_transition_table_with_roles" 
-	# }
+	"Purchase Order":{
+		"before_save" : "gulf_vision.overrides.purchase_order.updated_only_by_owner" 
+	}
 
 
 }
