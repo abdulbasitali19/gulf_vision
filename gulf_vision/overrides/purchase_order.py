@@ -1,176 +1,240 @@
-import frappe 
+import frappe
 import json
-from frappe.utils import today
+import psutil
+from frappe import _
+from frappe.utils import now
 from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+
+
+def setting_first_approver(doc, method=None):
+    if doc.cost_center and not doc.approval_stage:
+        approver = getting_transition_data(doc.cost_center)
+        doc.approval_stage = approver.get("approver_1")
 
 
 def updated_only_by_owner(doc, method=None):
     if frappe.session.user == doc.owner and doc.rejected == 1:
-        doc.remarks_for_rejection = " "
+        doc.remarks_for_rejection = ""
         doc.rejected = 0
-        doc.save(ignore_permissions = True)
-        frappe.db.commit()
-
 
 
 @frappe.whitelist()
 def purchase_order_approved(doc):
-    purchase_order = frappe.get_doc("Purchase Order",doc)
-    cost_center = frappe.get_doc("Cost Center",purchase_order.cost_center)
-    document_approval_workflow = frappe.get_doc("Documents Approval Workflow",{"document":"Purchase Order"})
-    if len(purchase_order.transition_table) == 0 and document_approval_workflow.approver_1 and document_approval_workflow.approver_1 == 'Project Admin':
-        project_admin = cost_center.project_admin
-        if frappe.session.user == project_admin:
-            purchase_order.append("transition_table", {
-                    "role": "Project Admin",
-                    "approved": 1,
-                    "approving_date": today(),
-                    "user": frappe.session.user,
-                    "transition_detail": "Purchase approved by Project Admin"
-                })
-            purchase_order.approval_stage = cost_center.store_keeper
-            purchase_order.docstatus = 0
-            purchase_order.workflow_state = 'Draft'
-            purchase_order.save()
-            return True
-        else:
-           frappe.throw("Document Should Be Approved By Project Admin")
+    doc = frappe.get_doc("Purchase Order", doc)
+    document_approval_workflow = frappe.get_doc(
+        "Documents Approval Workflow", {"document": "Purchase Order"}
+    )
+    transition_state = getting_transition_data(doc.cost_center)
+    if not doc.approval_stage:
+        doc.approval_stage = transition_state.get("approver_1")
 
-        
-    elif len(purchase_order.transition_table) == 1 and document_approval_workflow.approver_2 and document_approval_workflow.approver_2 == 'Store Keeper':
-        store_keeper = cost_center.store_keeper
-        if frappe.session.user == store_keeper:
-            purchase_order.append("transition_table", {
-                    "role": "Store Keeper",
+    if (
+        frappe.session.user == doc.approval_stage
+        and frappe.session.user == transition_state.get("approver_1")
+    ):
+        if transition_state.get("approver_2") is not "":
+            doc.append(
+                "transition_table",
+                {
+                    "role": document_approval_workflow.approver_1,
                     "approved": 1,
-                    "approving_date": today(),
+                    "approving_date": now(),
                     "user": frappe.session.user,
-                    "transition_detail": "Purchase Order approved by Store Keeper "
-                })
-            purchase_order.approval_stage = cost_center.management
-            purchase_order.docstatus = 0
-            purchase_order.workflow_state = 'Draft'
-            purchase_order.save()
+                    "transition_detail": "Purchase approved by {0}".format(
+                        transition_state.get("approver_1")
+                    ),
+                },
+            )
+            doc.documnet_currently_update_by = frappe.session.user
+            doc.approval_stage = transition_state.get("approver_2")
+            doc.docstatus = 0
+            doc.workflow_state = "Draft"
+            doc.save()
             return True
         else:
-            frappe.throw("Document Should Be Approved By Store keeper")
-    
+            doc.append(
+                "transition_table",
+                {
+                    "role": document_approval_workflow.approver_1,
+                    "approved": 1,
+                    "approving_date": now(),
+                    "user": frappe.session.user,
+                    "transition_detail": "Purchase approved by {0}".format(
+                        transition_state.get("approver_1")
+                    ),
+                },
+            )
+            doc.documnet_currently_update_by = frappe.session.user
+            doc.approval_stage = ""
+            doc.workflow_state = "Approved"
+            doc.submit()
+            return True
 
-    elif len(purchase_order.transition_table) == 2 and document_approval_workflow.approver_3 and document_approval_workflow.approver_3 == 'Management':
-        management = cost_center.management
-        if frappe.session.user == management:
-            purchase_order.append("transition_table", {
-                    "role": "Management",
+    elif (
+        frappe.session.user == doc.approval_stage
+        and frappe.session.user == transition_state.get("approver_2")
+    ):
+        if transition_state.get("approver_3") is not "":
+            doc.append(
+                "transition_table",
+                {
+                    "role": document_approval_workflow.approver_2,
                     "approved": 1,
-                    "approving_date": today(),
+                    "approving_date": now(),
                     "user": frappe.session.user,
-                    "transition_detail": "Purchase Order approved by Management"
-                })
-            purchase_order.approval_stage = cost_center.pm_name
-            purchase_order.docstatus = 0
-            purchase_order.workflow_state = 'Draft'
-            purchase_order.save()
+                    "transition_detail": "Purchase approved by {0}".format(
+                        transition_state.get("approver_2")
+                    ),
+                },
+            )
+            doc.documnet_currently_update_by = frappe.session.user
+            doc.approval_stage = transition_state.get("approver_3")
+            doc.docstatus = 0
+            doc.workflow_state = "Draft"
+            doc.save()
             return True
         else:
-            frappe.throw("Document Should Be Approved By Management")
-    
-    elif len(purchase_order.transition_table) == 3 and document_approval_workflow.approver_4 and document_approval_workflow.approver_4 == 'PM':
-        project_manager = cost_center.pm_name
-        if frappe.session.user == project_manager:
-            purchase_order.append("transition_table", {
-                    "role": "Management",
+            doc.append(
+                "transition_table",
+                {
+                    "role": document_approval_workflow.approver_2,
                     "approved": 1,
-                    "approving_date": today(),
+                    "approving_date": now(),
                     "user": frappe.session.user,
-                    "transition_detail": "Purchase Order approved by Project Manager "
-                })
-            purchase_order.approval_stage = " "
-            purchase_order.submit()
+                    "transition_detail": "Purchase approved by {0}".format(
+                        transition_state.get("approver_2")
+                    ),
+                },
+            )
+            doc.documnet_currently_update_by = frappe.session.user
+            doc.approval_stage = ""
+            doc.workflow_state = "Approved"
+            doc.submit()
+            return True
+
+    elif (
+        frappe.session.user == doc.approval_stage
+        and frappe.session.user == transition_state.get("approver_3")
+    ):
+        if transition_state.get("approver_4") is not "":
+            doc.append(
+                "transition_table",
+                {
+                    "role": document_approval_workflow.approver_3,
+                    "approved": 1,
+                    "approving_date": now(),
+                    "user": frappe.session.user,
+                    "transition_detail": "Purchase approved by {0}".format(
+                        transition_state.get("approver_3")
+                    ),
+                },
+            )
+            doc.documnet_currently_update_by = frappe.session.user
+            doc.approval_stage = transition_state.get("approver_4")
+            doc.docstatus = 0
+            doc.workflow_state = "Draft"
+            doc.save()
             return True
         else:
-            frappe.throw("Document Should Be Approved By Project Manager")
+            doc.append(
+                "transition_table",
+                {
+                    "role": document_approval_workflow.approver_3,
+                    "approved": 1,
+                    "approving_date": now(),
+                    "user": frappe.session.user,
+                    "transition_detail": "Purchase approved by {0}".format(
+                        transition_state.get("approver_3")
+                    ),
+                },
+            )
+            doc.documnet_currently_update_by = frappe.session.user
+            doc.approval_stage = ""
+            doc.workflow_state = "Approved"
+            doc.submit()
+            return True
+
+    elif (
+        frappe.session.user == doc.approval_stage
+        and frappe.session.user == transition_state.get("approver_4")
+    ):
+        if transition_state.get("approver_5") is not "":
+            doc.append(
+                "transition_table",
+                {
+                    "role": document_approval_workflow.approver_4,
+                    "approved": 1,
+                    "approving_date": now(),
+                    "user": frappe.session.user,
+                    "transition_detail": "Purchase approved by {0}".format(
+                        transition_state.get("approver_4")
+                    ),
+                },
+            )
+            doc.documnet_currently_update_by = frappe.session.user
+            doc.approval_stage = transition_state.get("approver_5")
+            doc.docstatus = 0
+            doc.workflow_state = "Draft"
+            doc.save()
+            return True
+        else:
+            doc.append(
+                "transition_table",
+                {
+                    "role": document_approval_workflow.approver_4,
+                    "approved": 1,
+                    "approving_date": now(),
+                    "user": frappe.session.user,
+                    "transition_detail": "Purchase approved by {0}".format(
+                        transition_state.get("approver_4")
+                    ),
+                },
+            )
+            doc.documnet_currently_update_by = frappe.session.user
+            doc.approval_stage = ""
+            doc.workflow_state = "Approved"
+            doc.submit()
+            return True
     else:
-        if len(purchase_order.transition_table) == 0 and frappe.session.user !="Administrator" : 
-            frappe.throw("Document  Must be approved by Project Admin")
-        elif len(purchase_order.transition_table) == 1 :
-            frappe.throw("Document Must be approved by Store Keeper")
-        elif len(purchase_order.transition_table) == 2:
-            frappe.throw("Document Must be approved by Management")
-        else:
-            frappe.throw("Document Must be Submit by Project Manager")
-
-
+        frappe.throw("Document  Must be approved by {0}".format(doc.approval_stage))
 
 
 @frappe.whitelist()
 def purchase_order_reject(doc):
-    purchase_order = frappe.get_doc("Purchase Order", doc)
-    cost_center = frappe.get_doc("Cost Center", purchase_order.cost_center)
-    document_approval_workflow = frappe.get_doc("Documents Approval Workflow", {"document": "Purchase Order"})
-
-    # make_property_setter( "Purchase Order", "rejected", "mandatory", 1,"check", validate_fields_for_doctype=False)
-
-
-    if len(purchase_order.transition_table) == 0:
-        if document_approval_workflow.approver_1 == 'Project Admin':
-            project_admin = cost_center.project_admin
-            if frappe.session.user == project_admin:
-                purchase_order.transition_table = []
-                purchase_order.workflow_state = 'Rejected'
-                return True
-            else:
-                throw("Document Should Be Rejected By Project Admin")
-
-    elif len(purchase_order.transition_table) == 1:
-        if document_approval_workflow.approver_2 == 'Store Keeper':
-            store_keeper = cost_center.store_keeper
-            if frappe.session.user == store_keeper:
-                purchase_order.transition_table = []
-                purchase_order.workflow_state = 'Rejected'
-                # purchase_order.save()
-                return True
-            else:
-                throw("Document Should Be Rejected By Shopkeeper")
-
-    elif len(purchase_order.transition_table) == 2:
-        if document_approval_workflow.approver_3 == 'Management':
-            management = cost_center.management
-            if frappe.session.user == management:
-                purchase_order.transition_table = []
-                purchase_order.workflow_state = 'Rejected'
-                # purchase_order.save()
-                return True
-            else:
-                throw("Document Should Be Rejected By Shopkeeper")
-
-    elif len(purchase_order.transition_table) == 3:
-        if document_approval_workflow.approver_4 == 'PM':
-            project_manager = cost_center.pm_name
-            if frappe.session.user == project_manager:
-                purchase_order.transition_table = []
-                purchase_order.workflow_state = 'Rejected'
-                # purchase_order.save()
-                return True
-            else:
-                throw("Document Should Be Rejected By Project Manager")
-
+    doc = frappe.get_doc("Purchase Order", doc)
+    if (
+        frappe.session.user == doc.approval_stage
+        or frappe.session.user == "Administrator"
+    ):
+        return True
     else:
-        if len(purchase_order.transition_table) == 0 and session.user != "Administrator":
-            throw("Document Must be rejected by Project Admin")
-        elif len(purchase_order.transition_table) == 1:
-            throw("Document Must be rejected by Store Keeper")
-        elif len(purchase_order.transition_table) == 2:
-            throw("Document Must be rejected by Management")
-        else:
-            throw("Document Must be Rejected by Project Manager")
+        throw("Document Should Be Rejected By {0}".format(doc.approval_stage))
 
 
+def getting_transition_data(cost_center):
+    transition_dict = {}
+    role_base_dict = {}
+    cost_center_role_dict = {}
+    document_approval_workflow = frappe.get_doc(
+        "Documents Approval Workflow", {"document": "Purchase Order"}
+    )
+    cost_center = frappe.get_doc("Cost Center", cost_center)
 
+    if cost_center:
+        cost_center_role_dict = {
+            "Project Admin": cost_center.project_admin,
+            "PM": cost_center.pm_name,
+            "Management": cost_center.management,
+            "Store Keeper": cost_center.store_keeper,
+        }
 
+    if document_approval_workflow:
+        role_base_dict = {
+            f"approver_{i}": getattr(document_approval_workflow, f"approver_{i}", None)
+            for i in range(1, 6)
+        }
 
+    for key, value in role_base_dict.items():
+        transition_dict[key] = cost_center_role_dict.get(value, value)
 
-
-
-
-
-
+    return transition_dict

@@ -1,8 +1,22 @@
 frappe.ui.form.on('Purchase Order', {
-    validate: function (frm) {
+    before_save:function(frm){
         frm.set_value("documnet_currently_update_by", frappe.session.user)
+        
     },
+    // after_save:function(frm){
+    //     if (frm.doc.documnet_currently_update_by == frappe.session.user){
+
+    //         $("button[data-label='Save']").hide();
+    //     }
+    // },
+
     onload: function (frm) {
+
+        if (frm.doc.documnet_currently_update_by == frappe.session.user){
+
+            $("button[data-label='Save']").hide();
+        }
+
         if (!frm.is_new() && frappe.session.user != 'Administrator' && frappe.session.user != frm.doc.approval_stage) {
             $("button[data-label='Submit']").hide();
             $(".inner-group-button[data-label='Actions'] > button").hide();
@@ -24,11 +38,11 @@ frappe.ui.form.on('Purchase Order', {
 
         if (frm.doc.workflow_state) {
             if (frm.doc.workflow_state == "Rejected" && frm.doc.rejected == 1) {
-                frm.set_intro(`Rejected By ${frm.doc.approval_stage}`, 'red')
+                frm.set_intro(`Rejected By ${frm.doc.documnet_currently_update_by}`, 'red')
             }
 
             if (frm.doc.workflow_state == "Approved") {
-                frm.set_intro(`Approved By ${frm.doc.document_currently_updated_by}`, 'green')
+                frm.set_intro(`Approved By ${frm.doc.documnet_currently_update_by}`, 'green')
 
             }
         }
@@ -47,7 +61,7 @@ frappe.ui.form.on('Purchase Order', {
                 callback: function (r) {
                     r = r.message
                     if (r == true) {
-                        frm.reload_doc()
+                        frm.refresh()
                         frappe.set_route('app/purchase-order')
 
                     }
@@ -79,11 +93,15 @@ frappe.ui.form.on('Purchase Order', {
                             frm.set_value("remarks_for_rejection", values.reject_remark)
                             frm.set_value("workflow_state", "rejected")
                             frm.set_value("rejected", 1)
+                            frm.set_value("approval_stage", "")
+                            frm.set_value("documnet_currently_update_by", frappe.session.user)
+                            frm.set_value("transition_table", [])
                             frm.save();
                         })
                     }
-                    // frappe.set_route('app/purchase-order')
-                    
+                    frm.refresh();
+                    frappe.set_route('app/purchase-order')
+
                 }
 
             })

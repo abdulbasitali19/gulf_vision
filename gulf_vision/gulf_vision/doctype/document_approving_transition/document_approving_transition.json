@@ -9,9 +9,9 @@
   "role",
   "user",
   "approving_date",
-  "approver_mac_address",
   "transition_detail",
-  "approved"
+  "approved",
+  "approver_mac_address"
  ],
  "fields": [
   {
@@ -68,7 +68,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-16 10:30:31.850987",
+ "modified": "2024-01-23 09:12:04.207351",
  "modified_by": "Administrator",
  "module": "Gulf Vision",
  "name": "Document Approving Transition",

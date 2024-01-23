@@ -109,7 +109,8 @@ doc_events = {
 		"before_save": "gulf_vision.overrides.material_request.check"
 	},
 	"Purchase Order":{
-		"before_save" : "gulf_vision.overrides.purchase_order.updated_only_by_owner" 
+		"validate" : "gulf_vision.overrides.purchase_order.updated_only_by_owner",
+		"before_save" : "gulf_vision.overrides.purchase_order.setting_first_approver"
 	}
 
 
