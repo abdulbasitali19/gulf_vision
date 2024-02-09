@@ -8,7 +8,7 @@ def check(doc, method=None):
     if frappe.session.user == doc.owner and doc.rejected == 1:
         doc.remarks_for_rejection = " "
         doc.rejected = 0
-        doc.save() 
+        doc.workflow_state = "Draft"
 
 
 @frappe.whitelist()
@@ -19,7 +19,7 @@ def Accepting_from_custom_approver_material_request(material_request):
         
         if approver_1 == "PM":
             pm_name = frappe.db.get_value("Cost Center", doc.get("cost_center"), "pm_name")
-            
+                
             if pm_name and frappe.session.user == pm_name:
                 doc.approver_transition_detail = []
                 doc.append('approver_transition_detail',{
@@ -33,7 +33,7 @@ def Accepting_from_custom_approver_material_request(material_request):
                 doc.workflow_state = "Approved"
                 doc.rejected = 0
                 doc.document_currently_updated_by = frappe.session.user
-                doc.approved_by_project_manager = ""
+                doc.approval_stage = ""
                 doc.submit()
                 return True
             else:
@@ -67,7 +67,7 @@ def Rejecting_from_custom_approver_material_request(material_request):
                     "approved": 0
                 })
                 if not doc.remarks_for_rejection:
-                    # doc.approved_by_project_manager = doc.document_created_by
+                    # doc.approval_stage = doc.document_created_by
                     return False
                 doc.workflow_state = "Rejected"
                 doc.docstatus = 0

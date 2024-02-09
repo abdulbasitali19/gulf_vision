@@ -3,13 +3,6 @@ frappe.ui.form.on('Purchase Order', {
         frm.set_value("documnet_currently_update_by", frappe.session.user)
         
     },
-    // after_save:function(frm){
-    //     if (frm.doc.documnet_currently_update_by == frappe.session.user){
-
-    //         $("button[data-label='Save']").hide();
-    //     }
-    // },
-
     onload: function (frm) {
 
         if (frm.doc.documnet_currently_update_by == frappe.session.user){
@@ -99,8 +92,10 @@ frappe.ui.form.on('Purchase Order', {
                             frm.save();
                         })
                     }
-                    frm.refresh();
-                    frappe.set_route('app/purchase-order')
+                    if(frm.doc.remarks_for_rejection){
+                        frm.refresh();
+                        frappe.set_route('app/purchase-order')
+                    }
 
                 }
 

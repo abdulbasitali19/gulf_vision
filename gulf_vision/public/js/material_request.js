@@ -3,20 +3,20 @@ frappe.ui.form.on('Material Request', {
         frm.set_value("document_currently_updated_by",frappe.session.user)
     },
     onload: function (frm) {
-        if (!frm.is_new() && frappe.session.user != "Administrator" && frappe.session.user != frm.doc.approved_by_project_manager) {
+        if (!frm.is_new() && frappe.session.user != "Administrator" && frappe.session.user != frm.doc.approval_stage) {
             $("button[data-label='Submit']").hide();
             $(".inner-group-button[data-label='Actions'] > button").hide();
 
         }
 
-        if (frm.doc.rejected == 1 &&  !frm.is_new() && frappe.session.user != "Administrator" && frappe.session.user == frm.doc.approved_by_project_manager) {
+        if (frm.doc.rejected == 1 &&  !frm.is_new() && frappe.session.user != "Administrator" && frappe.session.user == frm.doc.approval_stage) {
             $("button[data-label='Submit']").hide();
             $(".inner-group-button[data-label='Actions'] > button").hide();
 
         }
 
 
-        if (frm.doc.rejected == 0 && frappe.session.user != "Administrator" && frappe.session.user == frm.doc.approved_by_project_manager) {
+        if (frm.doc.rejected == 0 && frappe.session.user != "Administrator" && frappe.session.user == frm.doc.approval_stage) {
             $("button[data-label='Submit']").hide();
             $('.primary-action').prop('disabled', true);
             // $(".inner-group-button[data-label='Actions'] > button").hide();
@@ -26,7 +26,7 @@ frappe.ui.form.on('Material Request', {
 
         if (frm.doc.workflow_state) {
             if (frm.doc.workflow_state == "Rejected" && frm.doc.rejected == 1) {
-                frm.set_intro(`Rejected By ${frm.doc.approved_by_project_manager}`, 'red')
+                frm.set_intro(`Rejected By ${frm.doc.approval_stage}`, 'red')
             }
 
             if (frm.doc.workflow_state == "Approved") {
@@ -77,7 +77,10 @@ frappe.ui.form.on('Material Request', {
                             frm.set_value("remarks_for_rejection",values.reject_remark )
                             frm.set_value("workflow_state","rejected" )
                             frm.set_value("rejected",1)
+                            frm.set_value("approval_stage", "")
+                            frm.set_value("document_currently_updated_by", frappe.session.user)
                             frm.save();
+                            frappe.set_route('app/material-request')
                         })
                     }
                 }

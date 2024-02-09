@@ -16,6 +16,7 @@ def updated_only_by_owner(doc, method=None):
     if frappe.session.user == doc.owner and doc.rejected == 1:
         doc.remarks_for_rejection = ""
         doc.rejected = 0
+        doc.workflow_state = "Draft"
 
 
 @frappe.whitelist()
